@@ -11,6 +11,10 @@
 #include "entity.hpp"
 
 
+constexpr float g = -0.000981f;
+constexpr float k = 897.551f;
+constexpr float dt = 0.1f;
+
 struct NewtonianBody {
 	NewtonianBody() = delete;
 	NewtonianBody(NewtonianBody const&) = delete;
@@ -68,44 +72,7 @@ using GraphicComponent = sf::CircleShape;
 using point_particle = Entity<ListsViaTypes::TypeList<PhysicalComponent, ElectricalComponent, Selectable, GraphicComponent>>;
 using EntityManagerType = EntityManager<point_particle, std::vector>;
 
-class point_particle_simulator {
-public:
-
-	point_particle_simulator() = delete;
-	point_particle_simulator(std::function<float(void)> && gen_random_float, std::function<void(std::vector<GraphicComponent*> &)> && draw_particles) : gen_random_float(gen_random_float), draw_function(draw_particles) {}
-
-	void select(sf::Vector2f end_pos, sf::Vector2f start_pos);
-
-	bool clear_current_selection();
-
-	void reserve(size_t desired_capacity) {
-		manager.reserve(desired_capacity);
-	}
-
-	void generate_pairs();
-
-	std::thread interact_in_separate_thread();
-
-	void sort_pairs();
-
-	void draw();
-
-
-	EntityManagerType manager;
-private:
-
-	void physical_interaction();
-
-	std::function<float(void)> gen_random_float;
-
-
-
-	std::function<void(std::vector<GraphicComponent*>&)> draw_function;
-
-	std::vector<std::pair<point_particle*, point_particle*>> distinct_pairs;
-	std::vector<point_particle*> current_selection; 
-	std::mutex interaction_lock;
-	std::mutex selection_lock;
-	std::mutex draw_lock;
-};
-
+std::tuple < float, std::pair<float, float>, std::pair<float, float> > distance_between_and_difference(point_particle const& p1, point_particle const& p2);
+bool compare_by_distance(std::pair<point_particle *,point_particle *> const& pair1, std::pair<point_particle *, point_particle *> const& pair2);
+void mass_interaction(point_particle* p1, point_particle* p2);
+void electrical_interaction(point_particle* p1, point_particle* p2);
