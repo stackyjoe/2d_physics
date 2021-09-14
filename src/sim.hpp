@@ -68,7 +68,7 @@ private:
 	sf::View v;
 	sf::Font font;
 
-	std::atomic<float> approx_fps;
+	float approx_fps;
 	float zoom_factor;
 
 	std::vector<std::pair<point_particle*, point_particle*>> distinct_pairs;
