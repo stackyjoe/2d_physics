@@ -41,7 +41,7 @@ void point_particle_simulator::select(sf::Vector2f end_pos, sf::Vector2f start_p
 		auto ly = std::min(start_pos.y, end_pos.y);
 		auto by = std::max(start_pos.y, end_pos.y);
 
-		if (lx <= nc.x and nc.x <= bx and ly <= nc.y and nc.y <= by) {
+		if (lx <= nc.position[0] and nc.position[0] <= bx and ly <= nc.position[1] and nc.position[1] <= by) {
 			return true;
 		}
 		return false;
@@ -75,7 +75,7 @@ void point_particle_simulator::select(sf::Vector2f end_pos, sf::Vector2f start_p
 			auto& ec = *p->get_component<ElectricalComponent>();
 			total_mass += nc.mass;
 			total_charge += ec.charge;
-			total_scalar_momentum += nc.mass * (std::hypotf(nc.dx_dt, nc.dy_dt));
+			total_scalar_momentum += nc.mass * (std::hypotf(nc.velocity[0], nc.velocity[1]));
 		}
 
 		fmt::print("Total mass is {}, charge is {}, and avg scalar momentum {}\n", total_mass, total_charge, total_scalar_momentum / current_selection.size());
@@ -145,9 +145,13 @@ void point_particle_simulator::physical_interaction() {
 
 	auto const clear_it = [](std::unique_ptr<point_particle>& p) {
 		auto& nc = *p->get_value<PhysicalComponent>();
-		nc.shared_force->clear();
-	};
+		auto& force_vector = *(nc.shared_force);
 
+		for (auto& val : force_vector)
+			val = 0;
+		for (auto& val : nc.acceleration)
+			val = 0;
+	};
 
 
 	auto const wiggle = [this](std::unique_ptr<point_particle>& owning_ptr) {
@@ -155,10 +159,13 @@ void point_particle_simulator::physical_interaction() {
 
 		auto& nc = *p.get_value<NewtonianBody>();
 		auto& shape = *p.get_value<sf::CircleShape>();
+
+		/*
 		nc.x += wiggle_factor * this->gen_random_float();
 		nc.y += wiggle_factor * this->gen_random_float();
 		nc.dx_dt += wiggle_factor * this->gen_random_float();
 		nc.dy_dt += wiggle_factor * this->gen_random_float();
+		*/
 	};
 
 	auto const interaction = [](std::pair<point_particle*, point_particle*>& pair) {
@@ -173,16 +180,15 @@ void point_particle_simulator::physical_interaction() {
 
 		auto const m = nc.mass;
 
-		nc.d2x_dt2 += nc.shared_force->x / m;
-		nc.d2y_dt2 += nc.shared_force->y / m;
+		mathematics::vector<float, 2> total_force;
+		for(auto i = 0; i < 2; ++i)
+			total_force[i] = (*nc.shared_force)[i];
 
-		nc.dx_dt += dt * 0.5f * nc.d2x_dt2;
-		nc.dy_dt += dt * 0.5f * nc.d2y_dt2;
+		nc.acceleration += (1/m) * total_force;
+		nc.velocity += (dt * 0.5f) * nc.acceleration;
+		nc.position += dt * nc.velocity;
 
-		nc.x += dt * nc.dx_dt;
-		nc.y += dt * nc.dy_dt;
-
-		shape.setPosition(nc.x, nc.y);
+		shape.setPosition(nc.position[0], nc.position[1]);
 	};
 
 	auto& particles = manager.get_storage_for_entities();
@@ -228,6 +234,7 @@ void point_particle_simulator::draw() {
 }
 
 void point_particle_simulator::spawn_particles() {
+
 
 	for (size_t i = 0; i < num_dots; ++i) {
 		sf::CircleShape particle(particle_display_size);
@@ -329,13 +336,16 @@ void point_particle_simulator::draw_function(std::vector<GraphicComponent*>& gra
 
 
 		sf::Text txt;
-		txt.setFillColor(sf::Color::Black);
+		txt.setFillColor(sf::Color::Green);
 		txt.setOutlineColor(sf::Color::Magenta);
 		txt.setOutlineThickness(4.f);
 		txt.setFont(font);
 		txt.setString(std::to_string(approx_fps));
 		txt.setCharacterSize(32);
-		txt.setPosition(window.getView().getViewport().getPosition());
+
+		auto base_pos = window.getView().getViewport().getPosition();
+
+		txt.setPosition(base_pos);
 		window.draw(txt);
 
 
@@ -344,7 +354,7 @@ void point_particle_simulator::draw_function(std::vector<GraphicComponent*>& gra
 
 void point_particle_simulator::run() {
 
-	//window.setFramerateLimit(65);
+	window.setFramerateLimit(60);
 	window.setView(v);
 	window.display();
 

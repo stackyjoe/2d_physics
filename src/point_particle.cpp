@@ -4,15 +4,15 @@
 
 #include <fmt/format.h>
 
+using mathematics::vector;
 
+std::tuple < float, vector<float,2>, vector<float,2> > distance_between_and_difference(point_particle const& p1, point_particle const& p2) {
+	auto& pos1 = p1.get_value<NewtonianBody>()->position;
+	auto& pos2 = p2.get_value<NewtonianBody>()->position;
 
-std::tuple < float, std::pair<float,float>, std::pair<float,float> > distance_between_and_difference(point_particle const& p1, point_particle const& p2) {
-	auto& pos1 = *p1.get_value<NewtonianBody>();
-	auto& pos2 = *p2.get_value<NewtonianBody>();
-
-	auto dist = std::hypotf(pos2.x - pos1.x, pos2.y - pos1.y);
-	auto diff = std::make_pair(pos2.x - pos1.x, pos2.y - pos1.y);
-	auto unit_vector_of_diff = std::make_pair(diff.first / dist, diff.second / dist);
+	auto dist = std::hypotf(pos2[0] - pos1[0], pos2[1] - pos1[1]);
+	auto diff = pos2-pos1;
+	auto unit_vector_of_diff = (1/dist)*diff;
 
 	return std::make_tuple(dist, diff, unit_vector_of_diff);
 }
@@ -34,11 +34,15 @@ void mass_interaction(point_particle* p1, point_particle * p2) {
 	auto const m2 = pc2.mass;
 
 	auto const force = (g * m1 * m2) / (dist * dist);
+	vector<float, 2> vector_force = force * unit_dir;
 
-	pc1.shared_force->x += force * unit_dir.first;
-	pc1.shared_force->y += force * unit_dir.second;
-	pc2.shared_force->x -= force * unit_dir.first;
-	pc2.shared_force->y -= force * unit_dir.second;
+	auto& vector_force_array1 = *(pc1.shared_force);
+	auto& vector_force_array2 = *(pc2.shared_force);
+
+	for (auto i = 0; i < 2; ++i)
+		vector_force_array1[i] += vector_force[i];
+	for (auto i = 0; i < 2; ++i)
+		vector_force_array2[i] -= vector_force[i];
 };
 
 void electrical_interaction(point_particle * p1, point_particle* p2) {
@@ -57,13 +61,13 @@ void electrical_interaction(point_particle * p1, point_particle* p2) {
 	auto const c2 = ec2.charge;
 
 
-	auto const force = (k * c1 * c2) / (dist * dist);
+	auto const scalar_force = (k * c1 * c2) / (dist * dist);
 
+	vector<float, 2> vector_force = scalar_force * unit_dir;
 
-	pc1.shared_force->x += force * unit_dir.first;
-	pc1.shared_force->y += force * unit_dir.second;
-	pc2.shared_force->x -= force * unit_dir.first;
-	pc2.shared_force->y -= force * unit_dir.second;
-
+	for (auto i = 0; i < 2; ++i)
+		(*pc1.shared_force)[i] += vector_force[i];
+	for (auto i = 0; i < 2; ++i)
+		(*pc2.shared_force)[i] -= vector_force[i];
 }
 

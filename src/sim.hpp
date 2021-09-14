@@ -54,7 +54,7 @@ private:
 	static constexpr size_t height = 720;
 	static constexpr size_t smaller_dimension = std::min(width, height);
 
-	static constexpr size_t num_dots = 1000;
+	static constexpr size_t num_dots = 1500;
 	static constexpr float particle_display_size = 5.f;
 	static constexpr float placement_scale_factor = 1.f;
 

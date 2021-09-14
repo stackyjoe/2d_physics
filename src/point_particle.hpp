@@ -9,10 +9,11 @@
 #include <SFML/Window.hpp>
 
 #include "entity.hpp"
+#include "math_vectors.hpp"
 
 
-constexpr float g = -0.000981f;
-constexpr float k = 897.551f;
+constexpr float g = 0.00981f;
+constexpr float k = -89755.1f;
 constexpr float dt = 0.1f;
 
 struct NewtonianBody {
@@ -24,31 +25,23 @@ struct NewtonianBody {
 	NewtonianBody& operator=(NewtonianBody&&) = default;
 
 	NewtonianBody(float x, float y, float mass)
-		: x(x), y(y), dx_dt(0), dy_dt(0), d2x_dt2(0), d2y_dt2(0), mass(mass), shared_force(std::make_unique<thread_safe_data>()) { }
+		: mass(mass), shared_force(std::make_unique<std::array<std::atomic<float>,2>>()) {
+		position[0] = x;
+		position[1] = y;
+		(*shared_force)[0] = 0;
+		(*shared_force)[1] = 0;
+	}
 
-	float x;
-	float y;
-	float dx_dt;
-	float dy_dt;
-	float d2x_dt2;
-	float d2y_dt2;
+	template<mathematics::concepts::FieldLike T>
+	using coordinate = typename mathematics::vector<T,2>;
+
+	coordinate<float> position;
+	coordinate<float> velocity;
+	coordinate<float> acceleration;
+
 	const float mass;
 
-	struct thread_safe_data {
-		thread_safe_data() noexcept : x(0), y(0) { }
-		thread_safe_data(float x, float y) noexcept : x(x), y(y) { }
-
-		void clear() noexcept {
-			x = 0;
-			y = 0;
-		}
-
-		std::atomic<float> x;
-		std::atomic<float> y;
-	};
-
-	std::unique_ptr<thread_safe_data> shared_force;
-
+	std::unique_ptr<std::array<std::atomic<float>,2>> shared_force;
 };
 
 struct PointCharge {
@@ -72,7 +65,7 @@ using GraphicComponent = sf::CircleShape;
 using point_particle = Entity<ListsViaTypes::TypeList<PhysicalComponent, ElectricalComponent, Selectable, GraphicComponent>>;
 using EntityManagerType = EntityManager<point_particle, std::vector>;
 
-std::tuple < float, std::pair<float, float>, std::pair<float, float> > distance_between_and_difference(point_particle const& p1, point_particle const& p2);
+std::tuple < float, mathematics::vector<float,2>, mathematics::vector<float, 2> > distance_between_and_difference(point_particle const& p1, point_particle const& p2);
 bool compare_by_distance(std::pair<point_particle *,point_particle *> const& pair1, std::pair<point_particle *, point_particle *> const& pair2);
 void mass_interaction(point_particle* p1, point_particle* p2);
 void electrical_interaction(point_particle* p1, point_particle* p2);
