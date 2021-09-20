@@ -3,18 +3,19 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <tuple>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Main.hpp>
 #include <SFML/Window.hpp>
 
 #include "entity.hpp"
-#include "math_vectors.hpp"
+#include "mathematics.hpp"
 
 
 constexpr float g = 0.00981f;
 constexpr float k = -89755.1f;
-constexpr float dt = 0.1f;
+constexpr float dt = 0.05f;
 
 struct NewtonianBody {
 	NewtonianBody() = delete;

@@ -3,6 +3,7 @@ add_library(src STATIC)
 set( FILE_LIST 2d_physics.cpp
 	entity.hpp
 	sim.hpp sim.cpp
+	mathematics.hpp
 	point_particle.cpp point_particle.hpp
 	tuple_of_optionals.hpp
 	TypeList.hpp)

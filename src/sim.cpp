@@ -1,7 +1,5 @@
 #include "sim.hpp"
 
-#include <algorithm>
-#include <execution>
 #include <tuple>
 #include <numbers>
 
@@ -80,6 +78,14 @@ void point_particle_simulator::select(sf::Vector2f end_pos, sf::Vector2f start_p
 
 		fmt::print("Total mass is {}, charge is {}, and avg scalar momentum {}\n", total_mass, total_charge, total_scalar_momentum / current_selection.size());
 
+	});
+	get_statistics.detach();
+}
+
+
+bool point_particle_simulator::clear_current_selection() {
+	std::unique_lock l(selection_lock, std::try_to_lock);
+	if (l.owns_lock()) {
 		for (auto* p : current_selection) {
 			auto& sel = *p->get_component<Selectable>();
 			auto& gfx_cmp = *p->get_component<GraphicComponent>();
@@ -90,15 +96,6 @@ void point_particle_simulator::select(sf::Vector2f end_pos, sf::Vector2f start_p
 			sel.highlight_color = hl_color;
 			sel.selected = false;
 		}
-
-	});
-	get_statistics.detach();
-}
-
-
-bool point_particle_simulator::clear_current_selection() {
-	std::unique_lock l(selection_lock, std::try_to_lock);
-	if (l.owns_lock()) {
 		current_selection.clear();
 		return true;
 	}
@@ -403,10 +400,13 @@ void point_particle_simulator::run() {
 				}
 			}
 			else if (event.type == sf::Event::MouseButtonPressed) {
-				if (event.mouseButton.button == sf::Mouse::Right)
+				if (event.mouseButton.button == sf::Mouse::Right) {
 					start_pos_right = window.mapPixelToCoords(sf::Mouse::getPosition(window), v);
-				if (event.mouseButton.button == sf::Mouse::Left)
+				}
+				if (event.mouseButton.button == sf::Mouse::Left) {
+					clear_current_selection();
 					start_pos_left = window.mapPixelToCoords(sf::Mouse::getPosition(window), v);
+				}
 				v.getCenter();
 
 			}
@@ -431,7 +431,6 @@ void point_particle_simulator::run() {
 
 
 					fmt::print("Selected the region from ({},{}) to ({},{})\n", end_pos_left.x, end_pos_left.y, start_pos_left.x, start_pos_left.y);
-					clear_current_selection();
 					select(end_pos_left, start_pos_left);
 
 				}

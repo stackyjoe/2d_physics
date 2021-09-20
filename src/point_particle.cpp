@@ -1,17 +1,15 @@
 #include "point_particle.hpp"
 
-#include <tuple>
-
 #include <fmt/format.h>
 
 using mathematics::vector;
 
 std::tuple < float, vector<float,2>, vector<float,2> > distance_between_and_difference(point_particle const& p1, point_particle const& p2) {
-	auto& pos1 = p1.get_value<NewtonianBody>()->position;
-	auto& pos2 = p2.get_value<NewtonianBody>()->position;
+	auto const & pos1 = p1.get_value<NewtonianBody>()->position;
+	auto const & pos2 = p2.get_value<NewtonianBody>()->position;
 
-	auto dist = std::hypotf(pos2[0] - pos1[0], pos2[1] - pos1[1]);
-	auto diff = pos2-pos1;
+	auto diff = pos2 - pos1;
+	auto dist = mathematics::hypotenuse(diff);
 	auto unit_vector_of_diff = (1/dist)*diff;
 
 	return std::make_tuple(dist, diff, unit_vector_of_diff);
